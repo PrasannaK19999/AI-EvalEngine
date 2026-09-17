@@ -20,6 +20,11 @@ class GeminiJudgeClient:
         self._client = genai.Client(api_key=api_key)
         self._model = model
 
+    @property
+    def model(self) -> str:
+        """The model name this client calls (read-only)."""
+        return self._model
+
     def complete(self, prompt: str) -> str:
         """Send a prompt to the model and return its text response."""
         response = self._client.models.generate_content(
@@ -28,16 +33,9 @@ class GeminiJudgeClient:
             config=types.GenerateContentConfig(temperature=0.0),
         )
 
-        # Print judge token usage (the cost of running the evaluation itself).
-        usage = response.usage_metadata
-        if usage is not None:
-            print(
-                f"[judge tokens] prompt={usage.prompt_token_count} "
-                f"output={usage.candidates_token_count} "
-                f"total={usage.total_token_count}"
-            )
-
         text = response.text
         if text is None:
             raise RuntimeError("Gemini returned no text in the response.")
         return text
+
+    
