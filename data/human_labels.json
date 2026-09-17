@@ -1,0 +1,16 @@
+{
+  "leave_good": {
+    "faithfulness": 1.0,
+    "answer_relevance": 1.0,
+    "context_relevance": 1.0,
+    "answer_correctness": 1.0,
+    "citation_support": 1.0
+  },
+  "leave_degraded": {
+    "faithfulness": 0.0,
+    "answer_relevance": 1.0,
+    "context_relevance": 0.0,
+    "answer_correctness": 1.0,
+    "citation_support": 0.0
+  }
+}

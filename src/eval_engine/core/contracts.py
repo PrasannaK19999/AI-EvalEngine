@@ -114,6 +114,27 @@ class MetricUnit(StrEnum) :
     MS = "ms"
     USD = "USD"
 
+class MetricCalibration(BaseModel):
+    """How well the judge agreed with human labels for ONE metric."""
+    metric_name: str
+    sample_size: int = Field(ge=0)          # how many labeled (record, metric) pairs backed this
+    mae: float | None = None                # mean |judge - human|; 0 = perfect. None if no labels
+    agreement: float | None = None          # 1 - mae, the friendly 0-1 version. None if no labels
+    bias: float | None = None               # signed mean (judge - human); +over-scores, -harsh
+
+    @model_validator(mode="after")
+    def check_sample_and_scores(self) -> MetricCalibration:
+        if self.sample_size == 0 and self.mae is not None:
+            raise ValueError("mae must be None when sample_size is 0.")
+        if self.sample_size > 0 and self.mae is None:
+            raise ValueError("mae must be set when sample_size > 0.")
+        return self
+
+
+class CalibrationReport(BaseModel):
+    """Judge trustworthiness across all calibrated metrics."""
+    calibrations: dict[str, MetricCalibration] = Field(default_factory=dict)
+
 # --- Aggregate Reporting ---
 
 class MetricSummary(BaseModel):
