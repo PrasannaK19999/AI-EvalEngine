@@ -1,0 +1,77 @@
+[
+  {
+    "record_id": "leave_good",
+    "experiment_group": "baseline",
+    "input": "How many casual leave days do I get per year?",
+    "generated_answer": "{\"answer\": \"You are entitled to 12 casual leave days per year.\"}",
+    "retrieved_contexts": [
+      {"id": "policy_leave_01", "text": "Employees are entitled to 12 casual leave days per year."}
+    ],
+    "expected_answer": "12 casual leave days",
+    "expected_citation_ids": ["policy_leave_01"],
+    "schema_definition": {"answer": "str"},
+    "model_id": "gemini-2.5-flash-lite",
+    "latency_ms": 480,
+    "token_usage": {"prompt_tokens": 1200, "completion_tokens": 40, "total_tokens": 1240}
+  },
+  {
+    "record_id": "wfh_good",
+    "experiment_group": "baseline",
+    "input": "How many work-from-home days are allowed monthly?",
+    "generated_answer": "{\"answer\": \"You may work from home up to 8 days per month.\"}",
+    "retrieved_contexts": [
+      {"id": "policy_wfh_01", "text": "Staff may work from home up to 8 days each month."}
+    ],
+    "expected_answer": "8 days per month",
+    "expected_citation_ids": ["policy_wfh_01"],
+    "schema_definition": {"answer": "str"},
+    "model_id": "gemini-2.5-flash-lite",
+    "latency_ms": 510,
+    "token_usage": {"prompt_tokens": 1100, "completion_tokens": 35, "total_tokens": 1135}
+  },
+  {
+    "record_id": "leave_badjson",
+    "experiment_group": "baseline",
+    "input": "How many casual leave days do I get per year?",
+    "generated_answer": "You get 12 casual leave days (not valid JSON)",
+    "retrieved_contexts": [
+      {"id": "policy_leave_01", "text": "Employees are entitled to 12 casual leave days per year."}
+    ],
+    "expected_answer": "12 casual leave days",
+    "expected_citation_ids": ["policy_leave_01"],
+    "schema_definition": {"answer": "str"},
+    "model_id": "gemini-2.5-flash-lite",
+    "latency_ms": 495,
+    "token_usage": {"prompt_tokens": 1150, "completion_tokens": 30, "total_tokens": 1180}
+  },
+  {
+    "record_id": "leave_badcite",
+    "experiment_group": "baseline",
+    "input": "How many casual leave days do I get per year?",
+    "generated_answer": "{\"answer\": \"You are entitled to 12 casual leave days per year.\"}",
+    "retrieved_contexts": [
+      {"id": "policy_leave_01", "text": "Employees are entitled to 12 casual leave days per year."}
+    ],
+    "expected_answer": "12 casual leave days",
+    "expected_citation_ids": ["policy_leave_01", "policy_fabricated_99"],
+    "schema_definition": {"answer": "str"},
+    "model_id": "gemini-2.5-flash-lite",
+    "latency_ms": 470,
+    "token_usage": {"prompt_tokens": 1180, "completion_tokens": 45, "total_tokens": 1225}
+  },
+  {
+    "record_id": "leave_degraded",
+    "experiment_group": "degraded_retrieval",
+    "input": "How many casual leave days do I get per year?",
+    "generated_answer": "{\"answer\": \"You are entitled to 12 casual leave days per year.\"}",
+    "retrieved_contexts": [
+      {"id": "policy_dresscode_07", "text": "Business casual attire is required on weekdays."}
+    ],
+    "expected_answer": "12 casual leave days",
+    "expected_citation_ids": ["policy_leave_01"],
+    "schema_definition": {"answer": "str"},
+    "model_id": "gemini-2.5-flash-lite",
+    "latency_ms": 460,
+    "token_usage": {"prompt_tokens": 900, "completion_tokens": 40, "total_tokens": 940}
+  }
+]
