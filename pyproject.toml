@@ -38,3 +38,6 @@ strict = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[project.scripts]
+eval-engine = "eval_engine.cli.main:app"
