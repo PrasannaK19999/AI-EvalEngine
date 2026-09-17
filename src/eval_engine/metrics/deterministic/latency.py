@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from eval_engine.core.contracts import (
     EvaluationRecord,
+    MetricCategory,
     MetricResult,
     MetricStatus,
     MetricUnit,
@@ -15,6 +16,7 @@ class LatencyMetric(BaseMetric):
     """Reports request latency. No computation — latency is measured upstream."""
 
     name = "latency"
+    category = MetricCategory.DETERMINISTIC
     required_fields: tuple[str, ...] = ("latency_ms",)
 
     def __init__(self, unit: MetricUnit = MetricUnit.MS) -> None:

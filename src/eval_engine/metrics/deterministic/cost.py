@@ -8,6 +8,7 @@ from pathlib import Path
 
 from eval_engine.core.contracts import (
     EvaluationRecord,
+    MetricCategory,
     MetricResult,
     MetricStatus,
     MetricUnit,
@@ -19,6 +20,7 @@ class CostMetric(BaseMetric):
     """USD cost = (prompt_tokens/1M * input_rate) + (completion_tokens/1M * output_rate)."""
 
     name = "cost"
+    category = MetricCategory.DETERMINISTIC
     required_fields: tuple[str, ...] = ("model_id", "token_usage")
 
     def __init__(self, pricing_table_path: Path, unit: MetricUnit = MetricUnit.USD) -> None:

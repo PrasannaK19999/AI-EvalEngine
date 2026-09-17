@@ -4,14 +4,16 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from eval_engine.core.contracts import EvaluationRecord, MetricResult, MetricUnit
+from eval_engine.core.contracts import EvaluationRecord, MetricCategory, MetricResult, MetricUnit
 
 
 class BaseMetric(ABC):
     """Abstract interface that every evaluation metric must implement."""
 
     name: str
+    category: MetricCategory
     required_fields: tuple[str, ...] = ()
+    
 
     def __init__(self, unit: MetricUnit = MetricUnit.RATIO) -> None:
         self.unit = unit

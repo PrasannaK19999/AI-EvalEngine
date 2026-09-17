@@ -103,6 +103,11 @@ class MetricResult(BaseModel):
                 raise ValueError("An ERRORED metric must not carry a score.")
         return self
 
+class MetricCategory(StrEnum):
+    """Classifies a metric so the engine knows how to gate it."""
+    DETERMINISTIC = "deterministic"   # cheap, computed — runs as a gate
+    JUDGE = "judge"                   # expensive, model-scored — runs only if gates pass
+    
 class MetricUnit(StrEnum) :
     """Display label for what a metric's score represents. Never used in math."""
     RATIO = "ratio"

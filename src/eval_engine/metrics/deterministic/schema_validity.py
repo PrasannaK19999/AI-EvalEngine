@@ -1,19 +1,11 @@
 # ── src\eval_engine\metrics\deterministic\schema_validity.py ──
-"""Schema validity: checks the generated answer parses as JSON and has the expected keys.
-
-Tier-1 gate. A malformed answer scoring 0.0 is a valid FINDING, not a metric error,
-so this metric never returns ERRORED — it either skips (no schema) or scores 1.0/0.0.
-"""
+""" Schema validity: checks the generated answer parses as JSON and has the expected keys. """
 
 from __future__ import annotations
 
 import json
 
-from eval_engine.core.contracts import (
-    EvaluationRecord,
-    MetricResult,
-    MetricStatus,
-)
+from eval_engine.core.contracts import EvaluationRecord, MetricCategory, MetricResult, MetricStatus
 from eval_engine.metrics.base import BaseMetric
 
 
@@ -21,6 +13,7 @@ class SchemaValidityMetric(BaseMetric):
     """Score 1.0 if the answer is valid JSON containing every key the schema names, else 0.0."""
 
     name = "schema_validity"
+    category = MetricCategory.DETERMINISTIC
     required_fields: tuple[str, ...] = ("generated_answer", "schema_definition")
 
     def run(self, record: EvaluationRecord) -> MetricResult:

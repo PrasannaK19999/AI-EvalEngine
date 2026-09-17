@@ -6,11 +6,7 @@ the 'do they support the claim' half is a judge metric built later.
 
 from __future__ import annotations
 
-from eval_engine.core.contracts import (
-    EvaluationRecord,
-    MetricResult,
-    MetricStatus,
-)
+from eval_engine.core.contracts import EvaluationRecord, MetricCategory, MetricResult, MetricStatus
 from eval_engine.metrics.base import BaseMetric
 
 
@@ -18,6 +14,7 @@ class CitationValidityMetric(BaseMetric):
     """Score = (cited IDs that were actually retrieved) / (total cited IDs)."""
 
     name = "citation_validity"
+    category = MetricCategory.DETERMINISTIC
     required_fields: tuple[str, ...] = ("expected_citation_ids", "retrieved_contexts")
 
     def run(self, record: EvaluationRecord) -> MetricResult:
