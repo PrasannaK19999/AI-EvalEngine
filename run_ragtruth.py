@@ -14,7 +14,6 @@ from eval_engine.core.cache import JudgeCache
 from eval_engine.core.calibration import calibrate
 from eval_engine.core.engine import EvaluationEngine
 from eval_engine.core.gemini_client import GeminiJudgeClient
-from eval_engine.metrics.judges.answer_relevance import AnswerRelevanceMetric
 from eval_engine.metrics.judges.faithfulness import FaithfulnessMetric
 
 console = Console()
