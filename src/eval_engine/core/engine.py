@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from eval_engine.core.contracts import (
     EvaluationRecord,
-    MetricCategory,
     MetricResult,
     MetricStatus,
 )
@@ -25,37 +24,11 @@ class EvaluationEngine:
         return results
 
     def _evaluate_record(self, record: EvaluationRecord) -> list[MetricResult]:
-        """Run all metrics for ONE record, applying the field gate and the tier gate."""
-        record_results: list[MetricResult] = []
-
-        # Pass 1: deterministic metrics run first — they are the gates.
-        deterministic_failed = False
-        for metric in self._metrics:
-            if metric.category is not MetricCategory.DETERMINISTIC:
-                continue
-            result = self._run_one(metric, record)
-            record_results.append(result)
-            # A deterministic gate that scored 0.0 means "this record is broken."
-            if result.status is MetricStatus.SCORED and result.score == 0.0:
-                deterministic_failed = True
-
-        # Pass 2: judge metrics — skipped entirely if any gate failed.
-        for metric in self._metrics:
-            if metric.category is not MetricCategory.JUDGE:
-                continue
-            if deterministic_failed:
-                record_results.append(
-                    MetricResult(
-                        metric_name=metric.name,
-                        record_id=record.record_id,
-                        status=MetricStatus.SKIPPED,
-                        skip_reason="a deterministic gate failed for this record",
-                    )
-                )
-                continue
-            record_results.append(self._run_one(metric, record))
-
-        return record_results
+        """Run all metrics for ONE record, Considering the CLI Phase Failure,
+        we are reverting the gate where following the principle of 
+        Eval Engine should expose all metrics itself can't fail """
+        
+        return [self._run_one(metric, record) for metric in self._metrics]
 
     def _run_one(self, metric: BaseMetric, record: EvaluationRecord) -> MetricResult:
         """Field gate, then run. Missing required field -> SKIPPED, metric never runs."""
