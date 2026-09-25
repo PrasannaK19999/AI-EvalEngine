@@ -33,6 +33,17 @@ class EvaluationEngine:
     def _run_one(self, metric: BaseMetric, record: EvaluationRecord) -> MetricResult:
         """Field gate, then run. Missing required field -> SKIPPED, metric never runs."""
         for field in metric.required_fields:
+            # v2: gate infers applicability by inspecting fields. A subclass-only field
+            # (e.g. expected_tools) is absent on base records -> metric doesn't apply -> skip.
+            # Asks Pydantic's model definition (authoritative), not a getattr dodge. Cleaner
+            # v2: metrics declare applies_to(record) so the engine skips before touching fields.
+            if field not in type(record).model_fields:
+                return MetricResult(
+                    metric_name=metric.name,
+                    record_id=record.record_id,
+                    status=MetricStatus.SKIPPED,
+                    skip_reason=f"record type lacks field: {field}",
+                )
             if getattr(record, field) is None:
                 return MetricResult(
                     metric_name=metric.name,
