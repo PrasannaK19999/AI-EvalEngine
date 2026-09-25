@@ -1,0 +1,24 @@
+{
+  "search": {
+    "type": "object",
+    "properties": { "query": { "type": "string" } },
+    "required": ["query"],
+    "additionalProperties": false
+  },
+  "calculator": {
+    "type": "object",
+    "properties": {
+      "a": { "type": "number" },
+      "b": { "type": "number" },
+      "op": { "type": "string", "enum": ["add", "sub", "mul", "div"] }
+    },
+    "required": ["a", "b", "op"],
+    "additionalProperties": false
+  },
+  "fetch_url": {
+    "type": "object",
+    "properties": { "url": { "type": "string", "format": "uri" } },
+    "required": ["url"],
+    "additionalProperties": false
+  }
+}

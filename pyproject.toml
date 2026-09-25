@@ -15,6 +15,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "datasets>=2.0",
     "streamlit>=1.40",
+    "jsonschema>=4.20",
 ]
 
 [project.optional-dependencies]
@@ -22,6 +23,7 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.5",
     "mypy>=1.10",
+    "types-jsonschema>=4.20",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -43,3 +45,4 @@ testpaths = ["tests"]
 
 [project.scripts]
 eval-engine = "eval_engine.cli.main:app"
+

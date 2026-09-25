@@ -1,4 +1,3 @@
-# ── src\eval_engine\cli\main.py ──
 """Command-line entry point for the eval engine."""
 
 from __future__ import annotations
@@ -14,14 +13,18 @@ from eval_engine.core.aggregate import aggregate
 from eval_engine.core.cache import JudgeCache
 from eval_engine.core.calibration import calibrate, load_human_labels
 from eval_engine.core.contracts import MetricResult, MetricUnit
-from eval_engine.core.dataset import load_golden_set
+from eval_engine.core.dataset import load_golden_set, load_tool_schemas
 from eval_engine.core.engine import EvaluationEngine
 from eval_engine.core.gemini_client import GeminiJudgeClient
 from eval_engine.metrics.base import BaseMetric
+from eval_engine.metrics.deterministic.arg_validity import ArgValidityMetric
 from eval_engine.metrics.deterministic.citation_validity import CitationValidityMetric
 from eval_engine.metrics.deterministic.cost import CostMetric
 from eval_engine.metrics.deterministic.latency import LatencyMetric
+from eval_engine.metrics.deterministic.loop_detection import LoopDetectionMetric
 from eval_engine.metrics.deterministic.schema_validity import SchemaValidityMetric
+from eval_engine.metrics.deterministic.step_efficiency import StepEfficiencyMetric
+from eval_engine.metrics.deterministic.tool_selection import ToolSelectionMetric
 from eval_engine.metrics.judges.answer_correctness import AnswerCorrectnessMetric
 from eval_engine.metrics.judges.answer_relevance import AnswerRelevanceMetric
 from eval_engine.metrics.judges.citation_support import CitationSupportMetric
@@ -41,6 +44,10 @@ METRIC_UNITS: dict[str, MetricUnit] = {
     "context_relevance": MetricUnit.RATIO,
     "answer_correctness": MetricUnit.RATIO,
     "citation_support": MetricUnit.RATIO,
+    "tool_selection": MetricUnit.RATIO,
+    "arg_validity": MetricUnit.RATIO,
+    "step_efficiency": MetricUnit.RATIO,
+    "loop_detection": MetricUnit.RATIO,
 }
 
 
@@ -70,10 +77,6 @@ def _build_judges(pricing: Path) -> tuple[list[BaseMetric], JudgeCache]:
     return judges, cache
 
 
-def _print_summaries(report_summaries: dict[str, dict[str, object]]) -> None:
-    """Placeholder signature note — real call below uses the typed report."""
-
-
 @app.callback()
 def main() -> None:
     """Eval Engine — evaluate LLM/RAG outputs."""
@@ -84,12 +87,17 @@ def run(
     dataset: Annotated[Path, typer.Option(help="Path to the dataset JSON.")],
     pricing: Annotated[Path, typer.Option(help="Path to the pricing table JSON.")],
     judges: Annotated[
-        bool, typer.Option(help="Also run the LLM judge metrics (costs tokens).")] = False,
+        bool, typer.Option(help="Also run the LLM judge metrics (costs tokens).")
+    ] = False,
     calibrate_flag: Annotated[
         bool, typer.Option("--calibrate", help="Run judges and calibrate against human labels.")
     ] = False,
     labels: Annotated[
         Path | None, typer.Option(help="Human labels JSON (required with --calibrate).")
+    ] = None,
+    tool_schemas: Annotated[
+        Path | None,
+        typer.Option(help="Tool JSON-Schema file. Enables arg-validity on agent traces."),
     ] = None,
 ) -> None:
     """Evaluate a dataset and print a report. Optionally run judges and calibration."""
@@ -105,7 +113,14 @@ def run(
         CostMetric(pricing),
         CitationValidityMetric(),
         SchemaValidityMetric(),
+        # Agent (trajectory) deterministic metrics — self-skip on non-agent records.
+        ToolSelectionMetric(),
+        StepEfficiencyMetric(),
+        LoopDetectionMetric(),
     ]
+    if tool_schemas is not None:
+        metrics.append(ArgValidityMetric(load_tool_schemas(tool_schemas)))
+
     cache: JudgeCache | None = None
     if use_judges:
         judge_metrics, cache = _build_judges(pricing)

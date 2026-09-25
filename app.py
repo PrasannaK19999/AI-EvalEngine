@@ -9,7 +9,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from eval_engine.cli.main import METRIC_UNITS, format_mean
+from eval_engine.cli.main import format_mean
 from eval_engine.core.aggregate import aggregate
 from eval_engine.core.cache import JudgeCache
 from eval_engine.core.calibration import calibrate, load_human_labels
