@@ -1,0 +1,16 @@
+[
+  {
+    "id": "openai-001",
+    "model": "gpt-4o",
+    "expected_tools": ["search"],
+    "messages": [
+      {"role": "user", "content": "Find the capital of France."},
+      {"role": "assistant", "tool_calls": [
+        {"id": "call_1", "type": "function",
+         "function": {"name": "search", "arguments": "{\"query\": \"capital of France\"}"}}
+      ]},
+      {"role": "tool", "tool_call_id": "call_1", "content": "Paris"},
+      {"role": "assistant", "content": "The capital of France is Paris."}
+    ]
+  }
+]

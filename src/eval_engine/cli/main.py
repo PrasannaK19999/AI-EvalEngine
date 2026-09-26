@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from eval_engine.adapters.canonical import load_canonical_traces
+from eval_engine.adapters.openai_messages import load_openai_traces
 from eval_engine.core.aggregate import aggregate
 from eval_engine.core.cache import JudgeCache
 from eval_engine.core.calibration import calibrate, load_human_labels
@@ -80,14 +81,13 @@ def _build_judges(pricing: Path) -> tuple[list[BaseMetric], JudgeCache]:
         ContextRelevanceMetric(client, cache),
         AnswerCorrectnessMetric(client, cache),
         CitationSupportMetric(client, cache),
-        
         # Agent (trajectory) judges — self-skip on non-agent records via the gate.
-        
         TaskCompletionMetric(client, cache),
         StepNecessityMetric(client, cache),
         ErrorRecoveryMetric(client, cache),
     ]
     return judges, cache
+
 
 def _print_calibration(results: list[MetricResult], labels_path: Path) -> None:
     """Compare judge scores to human labels and print the calibration table."""
@@ -106,6 +106,7 @@ def _print_calibration(results: list[MetricResult], labels_path: Path) -> None:
         bias = f"{c.bias:+.3f}" if c.bias is not None else "-"
         table.add_row(name, str(c.sample_size), mae, agree, bias)
     console.print(table)
+
 
 def _print_report(records_count: int, report: AggregateReport) -> None:
     """Print the per-group metric summary tables. Shared by run and run-traces."""
@@ -128,6 +129,7 @@ def _print_report(records_count: int, report: AggregateReport) -> None:
                 str(s.errored_count),
             )
         console.print(table)
+
 
 @app.callback()
 def main() -> None:
@@ -182,27 +184,7 @@ def run(
     results = engine.evaluate(records)
     report = aggregate(results, records)
 
-    #console.print(f"\n[bold]Evaluated {len(records)} records[/bold]")
-    #console.print(f"Records per group: {report.total_records_by_group}\n")
-
     _print_report(len(records), report)
-
-    for group, summaries in report.summaries.items():
-        table = Table(title=f"Group: {group}")
-        table.add_column("Metric")
-        table.add_column("Mean", justify="right")
-        table.add_column("Scored", justify="right")
-        table.add_column("Skipped", justify="right")
-        table.add_column("Errored", justify="right")
-        for name, s in summaries.items():
-            table.add_row(
-                name,
-                format_mean(name, s.mean_score),
-                str(s.scored_count),
-                str(s.skipped_count),
-                str(s.errored_count),
-            )
-        console.print(table)
 
     if calibrate_flag and labels is not None:
         _print_calibration(results, labels)
@@ -210,10 +192,14 @@ def run(
     if cache is not None:
         cache.close()
 
+
 @app.command(name="run-traces")
 def run_traces(
-    traces: Annotated[Path, typer.Option(help="Path to the canonical agent-trace JSON.")],
+    traces: Annotated[Path, typer.Option(help="Path to the agent-trace JSON.")],
     pricing: Annotated[Path, typer.Option(help="Path to the pricing table JSON.")],
+    trace_format: Annotated[
+        str, typer.Option("--format", help="Trace format: 'canonical' or 'openai'.")
+    ] = "canonical",
     judges: Annotated[
         bool, typer.Option(help="Also run the LLM judge metrics (costs tokens).")
     ] = False,
@@ -223,7 +209,12 @@ def run_traces(
     ] = None,
 ) -> None:
     """Evaluate agent traces (trajectories) and print a report."""
-    records = load_canonical_traces(traces)
+    if trace_format == "openai":
+        records = load_openai_traces(traces)
+    elif trace_format == "canonical":
+        records = load_canonical_traces(traces)
+    else:
+        raise typer.BadParameter(f"unknown format '{trace_format}'; use 'canonical' or 'openai'.")
 
     metrics: list[BaseMetric] = [
         LatencyMetric(),
@@ -250,6 +241,7 @@ def run_traces(
 
     if cache is not None:
         cache.close()
+
 
 if __name__ == "__main__":
     app()
