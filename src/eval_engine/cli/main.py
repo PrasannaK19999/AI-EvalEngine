@@ -9,10 +9,11 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from eval_engine.adapters.canonical import load_canonical_traces
 from eval_engine.core.aggregate import aggregate
 from eval_engine.core.cache import JudgeCache
 from eval_engine.core.calibration import calibrate, load_human_labels
-from eval_engine.core.contracts import MetricResult, MetricUnit
+from eval_engine.core.contracts import AggregateReport, MetricResult, MetricUnit
 from eval_engine.core.dataset import load_golden_set, load_tool_schemas
 from eval_engine.core.engine import EvaluationEngine
 from eval_engine.core.gemini_client import GeminiJudgeClient
@@ -88,6 +89,45 @@ def _build_judges(pricing: Path) -> tuple[list[BaseMetric], JudgeCache]:
     ]
     return judges, cache
 
+def _print_calibration(results: list[MetricResult], labels_path: Path) -> None:
+    """Compare judge scores to human labels and print the calibration table."""
+    human = load_human_labels(labels_path)
+    cal = calibrate(results, human)
+
+    table = Table(title="Judge Calibration (vs human labels)")
+    table.add_column("Metric")
+    table.add_column("N", justify="right")
+    table.add_column("MAE", justify="right")
+    table.add_column("Agreement", justify="right")
+    table.add_column("Bias", justify="right")
+    for name, c in cal.calibrations.items():
+        mae = f"{c.mae:.3f}" if c.mae is not None else "-"
+        agree = f"{c.agreement:.3f}" if c.agreement is not None else "-"
+        bias = f"{c.bias:+.3f}" if c.bias is not None else "-"
+        table.add_row(name, str(c.sample_size), mae, agree, bias)
+    console.print(table)
+
+def _print_report(records_count: int, report: AggregateReport) -> None:
+    """Print the per-group metric summary tables. Shared by run and run-traces."""
+    console.print(f"\n[bold]Evaluated {records_count} records[/bold]")
+    console.print(f"Records per group: {report.total_records_by_group}\n")
+
+    for group, summaries in report.summaries.items():
+        table = Table(title=f"Group: {group}")
+        table.add_column("Metric")
+        table.add_column("Mean", justify="right")
+        table.add_column("Scored", justify="right")
+        table.add_column("Skipped", justify="right")
+        table.add_column("Errored", justify="right")
+        for name, s in summaries.items():
+            table.add_row(
+                name,
+                format_mean(name, s.mean_score),
+                str(s.scored_count),
+                str(s.skipped_count),
+                str(s.errored_count),
+            )
+        console.print(table)
 
 @app.callback()
 def main() -> None:
@@ -142,8 +182,10 @@ def run(
     results = engine.evaluate(records)
     report = aggregate(results, records)
 
-    console.print(f"\n[bold]Evaluated {len(records)} records[/bold]")
-    console.print(f"Records per group: {report.total_records_by_group}\n")
+    #console.print(f"\n[bold]Evaluated {len(records)} records[/bold]")
+    #console.print(f"Records per group: {report.total_records_by_group}\n")
+
+    _print_report(len(records), report)
 
     for group, summaries in report.summaries.items():
         table = Table(title=f"Group: {group}")
@@ -168,25 +210,46 @@ def run(
     if cache is not None:
         cache.close()
 
+@app.command(name="run-traces")
+def run_traces(
+    traces: Annotated[Path, typer.Option(help="Path to the canonical agent-trace JSON.")],
+    pricing: Annotated[Path, typer.Option(help="Path to the pricing table JSON.")],
+    judges: Annotated[
+        bool, typer.Option(help="Also run the LLM judge metrics (costs tokens).")
+    ] = False,
+    tool_schemas: Annotated[
+        Path | None,
+        typer.Option(help="Tool JSON-Schema file. Enables arg-validity."),
+    ] = None,
+) -> None:
+    """Evaluate agent traces (trajectories) and print a report."""
+    records = load_canonical_traces(traces)
 
-def _print_calibration(results: list[MetricResult], labels_path: Path) -> None:
-    """Compare judge scores to human labels and print the calibration table."""
-    human = load_human_labels(labels_path)
-    cal = calibrate(results, human)
+    metrics: list[BaseMetric] = [
+        LatencyMetric(),
+        CostMetric(pricing),
+        CitationValidityMetric(),
+        SchemaValidityMetric(),
+        ToolSelectionMetric(),
+        StepEfficiencyMetric(),
+        LoopDetectionMetric(),
+    ]
+    if tool_schemas is not None:
+        metrics.append(ArgValidityMetric(load_tool_schemas(tool_schemas)))
 
-    table = Table(title="Judge Calibration (vs human labels)")
-    table.add_column("Metric")
-    table.add_column("N", justify="right")
-    table.add_column("MAE", justify="right")
-    table.add_column("Agreement", justify="right")
-    table.add_column("Bias", justify="right")
-    for name, c in cal.calibrations.items():
-        mae = f"{c.mae:.3f}" if c.mae is not None else "-"
-        agree = f"{c.agreement:.3f}" if c.agreement is not None else "-"
-        bias = f"{c.bias:+.3f}" if c.bias is not None else "-"
-        table.add_row(name, str(c.sample_size), mae, agree, bias)
-    console.print(table)
+    cache: JudgeCache | None = None
+    if judges:
+        judge_metrics, cache = _build_judges(pricing)
+        metrics.extend(judge_metrics)
 
+    engine = EvaluationEngine(metrics=metrics)
+    results = engine.evaluate(list(records))
+    report = aggregate(results, list(records))
+
+    _print_report(len(records), report)
+
+    if cache is not None:
+        cache.close()
 
 if __name__ == "__main__":
     app()

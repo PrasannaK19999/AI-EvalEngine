@@ -1,0 +1,22 @@
+[
+  {
+    "record_id": "trace-001",
+    "task": "Find the capital of France and report it.",
+    "steps": [
+      {"tool": "search", "args": {"query": "capital of France"}, "result": "Paris"},
+      {"tool": "write", "args": {"text": "The capital of France is Paris."}, "result": "ok"}
+    ],
+    "final_answer": "The capital of France is Paris.",
+    "expected_tools": ["search"]
+  },
+  {
+    "record_id": "trace-002",
+    "task": "Fetch the weather for Tokyo.",
+    "steps": [
+      {"tool": "fetch_weather", "args": {"city": "Tokyo"}, "error": "API timeout"},
+      {"tool": "fetch_weather", "args": {"city": "Tokyo"}, "result": "18C, clear"}
+    ],
+    "final_answer": "Tokyo is 18C and clear.",
+    "expected_tools": ["fetch_weather"]
+  }
+]
