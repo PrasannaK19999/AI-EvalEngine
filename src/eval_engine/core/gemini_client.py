@@ -22,8 +22,8 @@ class GeminiJudgeClient:
             http_options=types.HttpOptions(
                 timeout=30_000,  # ms — a single call fails after 30s instead of hanging silently
                 retry_options=types.HttpRetryOptions(
-                    attempts=3,              # SDK retries transient 429/503 up to 3 times
-                    initial_delay=1.0,       # first backoff ~1s
+                    attempts=3,             
+                    initial_delay=1.0,       
                     max_delay=15.0,          # cap each backoff at 15s (not the 60s default)
                 ),
             ),
@@ -37,6 +37,7 @@ class GeminiJudgeClient:
 
     def complete(self, prompt: str) -> str:
         """Send a prompt to the model and return its text response."""
+
         response = self._client.models.generate_content(
             model=self._model,
             contents=prompt,
