@@ -29,7 +29,10 @@ from eval_engine.metrics.judges.answer_correctness import AnswerCorrectnessMetri
 from eval_engine.metrics.judges.answer_relevance import AnswerRelevanceMetric
 from eval_engine.metrics.judges.citation_support import CitationSupportMetric
 from eval_engine.metrics.judges.context_relevance import ContextRelevanceMetric
+from eval_engine.metrics.judges.error_recovery import ErrorRecoveryMetric
 from eval_engine.metrics.judges.faithfulness import FaithfulnessMetric
+from eval_engine.metrics.judges.step_necessity import StepNecessityMetric
+from eval_engine.metrics.judges.task_completion import TaskCompletionMetric
 
 app = typer.Typer()
 console = Console()
@@ -48,6 +51,9 @@ METRIC_UNITS: dict[str, MetricUnit] = {
     "arg_validity": MetricUnit.RATIO,
     "step_efficiency": MetricUnit.RATIO,
     "loop_detection": MetricUnit.RATIO,
+    "task_completion": MetricUnit.RATIO,
+    "step_necessity": MetricUnit.RATIO,
+    "error_recovery": MetricUnit.RATIO,
 }
 
 
@@ -73,6 +79,12 @@ def _build_judges(pricing: Path) -> tuple[list[BaseMetric], JudgeCache]:
         ContextRelevanceMetric(client, cache),
         AnswerCorrectnessMetric(client, cache),
         CitationSupportMetric(client, cache),
+        
+        # Agent (trajectory) judges — self-skip on non-agent records via the gate.
+        
+        TaskCompletionMetric(client, cache),
+        StepNecessityMetric(client, cache),
+        ErrorRecoveryMetric(client, cache),
     ]
     return judges, cache
 
