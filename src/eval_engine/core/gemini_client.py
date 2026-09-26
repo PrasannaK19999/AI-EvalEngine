@@ -17,7 +17,17 @@ class GeminiJudgeClient:
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY not found in environment or .env file.")
-        self._client = genai.Client(api_key=api_key)
+        self._client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(
+                timeout=30_000,  # ms — a single call fails after 30s instead of hanging silently
+                retry_options=types.HttpRetryOptions(
+                    attempts=3,              # SDK retries transient 429/503 up to 3 times
+                    initial_delay=1.0,       # first backoff ~1s
+                    max_delay=15.0,          # cap each backoff at 15s (not the 60s default)
+                ),
+            ),
+        )
         self._model = model
 
     @property
